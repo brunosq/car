@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+	<link rel="stylesheet" href="../css/frame_index.css" type="text/css" />
+    
+	<style type="text/css">
+		*{
+			margin: 0;
+			padding: 0;
+		}
+	</style>
+	<body>
+		<!-- 企业/待发货源/车辆/订单详情 -->
+		<div style="position: absolute; margin-left: 6%;margin-top: 5%;z-index: 1;">
+			<img style="display: none" id="companyDetailClose" src="../images/close.png" onclick="comDetailClose()"/>
+			<div id="companyDetail" style="display: none"></div>
+		</div>
+		<!-- 列表 -->
+		<div style="position: absolute; margin-left: 50%;margin-top: 5%;z-index: 1;">
+			<img style="display: none" id="companyListClose" src="../images/close.png" onclick="comListClose()"/>
+			<div id="companyList" style="display:none"></div>
+		</div>
+		<div id="map">
+			
+		</div>
+		
+	</body>
+	<script type="text/javascript" src="../js/jquery.min.js"></script>
+	<script type="text/javascript" src="../js/echarts-all.js"></script>
+	<script type="text/javascript" src="../js/geomap.js"></script>
+	<script type="text/javascript" src="../js/util.js"></script>
+	<script type="text/javascript" src="../js/index.js" ></script>
+	<script type="text/javascript">
+	 //启动加载
+    $(function(){
+    	var param='';
+
+    	/*1加载数据*/
+    	getCompanyList(param);/*全国地图--企业*/
+    	getGoodsList(param);/*全国地图--待报价货源*/
+    	getOrderList(param);/*全国地图--订单*/
+    	getUnusedCarList(param);/*全国地图--闲置车辆*/
+    	
+    	
+    	/*2渲染Echarts*/
+    	showChinaMap();
+
+		//地图空白处点击隐藏列表框和详情框
+		$("#map").click(function(event){
+			if(isMapBankClick){
+				comListClose();
+				comDetailClose;
+			}
+			isMapBankClick = true;
+		});
+	});
+	</script>
+</html>

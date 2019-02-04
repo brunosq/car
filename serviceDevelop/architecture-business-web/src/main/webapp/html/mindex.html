@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+    <head>
+        <!--<meta name="viewport" content="width=device-width, initial-scale=1">-->
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" href="../js/bootstrap-3.3.7-dist/css/bootstrap.css" type="text/css" />
+        <link rel="stylesheet" href="../css/mindex.css" type="text/css" />
+    </head>
+    <body>
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-xs-12" id="title">
+                    <p>
+                        <span>全国累计交易额</span>
+                        <span id="allMoney"></span>
+                        <span>元</span>
+                    </p>
+                </div>
+
+                <div class="col-xs-12" id="tradeView">
+                    <div id="tradeChart"></div>
+                </div>
+
+                <div class="col-xs-12">
+                    <div id="left_bottom" style="width: 100%;height: 220px;"></div>
+                    <div class="row" id="left_bottom_rate">
+                        <div class="col-xs-4">
+                            <p style="text-align: center">货源发布率环比增长</p>
+                        </div>
+                        <div class="col-xs-4">
+                            <p style="text-align: center">货源报价率环比增长</p>
+                        </div>
+                        <div class="col-xs-4">
+                            <p style="text-align: center">货源成单率环比增长</p>
+                        </div>
+                    </div>
+                    <div class="row" id="left_bottom_growth">
+                        <div class="col-xs-4">
+                            <p style="text-align: center">货源发布率同比增长</p>
+                        </div>
+                        <div class="col-xs-4">
+                            <p style="text-align: center">货源报价率同比增长</p>
+                        </div>
+                        <div class="col-xs-4">
+                            <p style="text-align: center">货源成单率同比增长</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xs-5" style="padding-left: 25px;margin-bottom: 5px">
+                    <select class="form-control form1" id="menuSelect" onchange="menuSelect(this)">
+                        <option>企业</option>
+                        <option>待报价货源</option>
+                        <option>在途订单</option>
+                        <option>闲置的车辆</option>
+                    </select>
+                </div>
+
+                <div class="col-xs-7" style="padding-right: 25px">
+                    <select class="form-control form1" id="country" onchange="countrySelect(this)"></select>
+                    <script id="countryList" type="text/x-custom-template">
+                        {{#each this}}
+                        	<option>{{name}}</option>
+                        {{/each}}
+                    </script>
+                </div>
+
+                <div id="companys"></div>
+                <script id="companyList" type="text/x-custom-template">
+                    {{#each this}}
+                    <div class="col-xs-12" style="background-image: url(../images/list_bg04.png);background-size: 100% 100%;width: 97%; padding-top: 10px;margin-left: 5px;margin-top: 5px;margin-bottom: 5px">
+                        <p style="color: #9CC2D6">企业：{{companyName}}</p>
+                        <p style="color: #9CC2D6">联系电话：{{phone}}</p>
+                        <p style="color: #9CC2D6">企业位置：{{address}}</p>
+                    </div>
+                    {{/each}}
+                </script>
+
+                <div id="offerGoods"></div>
+                <script id="goodsList" type="text/x-custom-template">
+                    {{#each this}}
+                    <div class="col-xs-12" style="background-image: url(../images/list_bg01.png);background-size: 100% 100%;width: 97%;padding-top: 10px;margin-left: 5px;margin-top: 5px;margin-bottom: 5px">
+                        <p style="color: #9CC2D6">出发地：{{startCity}}{{startCounty}}</p>
+                        <p style="color: #9CC2D6">目的地：{{destCity}}{{destCounty}}</p>
+                        <p style="color: #9CC2D6">里程数：{{distance}}公里</p>
+                        <p style="color: #9CC2D6">需求车型：{{carType}}</p>
+                        <p style="color: #9CC2D6">
+							{{#eq isWeightGoods 1}}
+								重量：{{weight}}吨
+							{{/eq}}
+							{{#eq isWeightGoods 0}}
+								体积：{{volume}}方
+							{{/eq}}
+						</p>
+                        <p style="color: #9CC2D6">货物名称：{{goodsName}}</p>
+                        <p style="color: #9CC2D6">预计发货时间：{{startTime}}</p>
+                        <p style="color: #9CC2D6">预计到达时间：{{endTime}}</p>
+                    </div>
+                    {{/each}}
+                </script>
+
+                <div id="onwayOrders"></div>
+                <script id="orderList" type="text/x-custom-template">
+                    {{#each this}}
+                    <div class="col-xs-12" style="background-image: url(../images/list_bg02.png);background-size: 100% 100%;width: 97%;padding-top: 10px;margin-left: 5px;margin-top: 5px;margin-bottom: 5px">
+                        <p style="color: #9CC2D6">订单编号：{{orderNum}}</p>
+                        <p style="color: #9CC2D6">企业：{{company}}</p>
+                        <p style="color: #9CC2D6">司机：{{driverName}}</p>
+                        <p style="color: #9CC2D6">出发地：{{startAddr}}</p>
+                        <p style="color: #9CC2D6">目的地：{{destAddr}}</p>
+                        <p style="color: #9CC2D6">运距：{{distance}}公里</p>
+                        <p style="color: #9CC2D6">货物类型：{{goodsType}}</p>
+                        <p style="color: #9CC2D6">
+							{{#eq isWeightGoods 1}}
+								重量：{{weight}}吨
+							{{/eq}}
+							{{#eq isWeightGoods 0}}
+								体积：{{volume}}方
+							{{/eq}}
+						</p>
+                    </div>
+                    {{/each}}
+                </script>
+
+                <div id="drivers"></div>
+                <script id="driverList" type="text/x-custom-template">
+                    {{#each this}}
+                    <div class="col-xs-12" style="background-image: url(../images/list_bg03.png);background-size: 100% 100%;width: 97%;padding-top: 10px;margin-left: 5px;margin-top: 5px;margin-bottom: 5px">
+                        <p style="color: #9CC2D6">司机姓名：{{driveName}}</p>
+                        <p style="color: #9CC2D6">车型：{{carType}}</p>
+                        <p style="color: #9CC2D6">车长：{{carLength}}米</p>
+                        <p style="color: #9CC2D6">载重：{{loadWeight}}吨</p>
+                    </div>
+                    {{/each}}
+                </script>
+            </div>
+        </div>
+
+
+        <script type="text/javascript" src="../js/jquery.min.js"></script>
+        <script type="text/javascript" src="../js/echarts-all.js"></script>
+        <script type="text/javascript" src="../js/geomap.js"></script>
+        <script type="text/javascript" src="../js/util.js"></script>
+        <script type="text/javascript" src="../js/handlebars/handlebars.min-v4.0.5.js"></script>
+
+        <script type="text/javascript">
+            //默认选中菜单 ----企业
+            var currentSelectMenu = 0;
+            //默认选中全国
+            var currentCountrySelect = '';
+
+            var json = [{
+                "name": "全国"
+            },{
+                "name": "北京"
+            }, {
+                "name": "天津"
+            }, {
+                "name": "河北"
+            }, {
+                "name": "山西"
+            }, {
+                "name": "内蒙古"
+            }, {
+                "name": "辽宁"
+            }, {
+                "name": "吉林"
+            }, {
+                "name": "黑龙江"
+            }, {
+                "name": "上海"
+            }, {
+                "name": "江苏"
+            }, {
+                "name": "浙江"
+            }, {
+                "name": "安徽"
+            }, {
+                "name": "福建"
+            }, {
+                "name": "江西"
+            }, {
+                "name": "山东"
+            }, {
+                "name": "河南"
+            }, {
+                "name": "湖北"
+            }, {
+                "name": "湖南"
+            }, {
+                "name": "广东"
+            }, {
+                "name": "海南"
+            }, {
+                "name": "广西"
+            }, {
+                "name": "甘肃"
+            }, {
+                "name": "陕西"
+            }, {
+                "name": "新疆"
+            }, {
+                "name": "青海"
+            }, {
+                "name": "宁夏"
+            }, {
+                "name": "重庆"
+            }, {
+                "name": "四川"
+            }, {
+                "name": "贵州"
+            }, {
+                "name": "云南"
+            }, {
+                "name": "西藏"
+            }, {
+                "name": "台湾"
+            }, {
+                "name": "澳门"
+            }, {
+                "name": "香港"
+            }];
+
+            //菜单选择
+            function menuSelect(obj){
+                switch (obj.selectedIndex)
+                {
+                    case 0:
+                    {
+                        currentSelectMenu = 0;
+                        getCompanyList(currentCountrySelect);
+                        break;
+                    }
+                    case 1:
+                    {
+                        currentSelectMenu = 1;
+                        getGoodsList(currentCountrySelect);
+                        break;
+                    }
+                    case 2:
+                    {
+                        currentSelectMenu = 2;
+                        getOrderList(currentCountrySelect);
+                        break;
+                    }
+                    case 3:
+                    {
+                        currentSelectMenu = 3;
+                        getUnusedCarList(currentCountrySelect);
+                        break;
+                    }
+                    default :
+                        break;
+                }
+            }
+
+            //地址选择
+            function countrySelect(obj){
+                currentCountrySelect = obj.options[obj.selectedIndex].value;
+
+                if(currentCountrySelect == '全国'){
+                    currentCountrySelect = '';
+                }
+
+                switch (currentSelectMenu)
+                {
+                    case 0:
+                    {
+                        getCompanyList(currentCountrySelect);
+                        break;
+                    }
+                    case 1:
+                    {
+                        getGoodsList(currentCountrySelect);
+                        break;
+                    }
+                    case 2:
+                    {
+                        getOrderList(currentCountrySelect);
+                        break;
+                    }
+                    case 3:
+                    {
+                        getUnusedCarList(currentCountrySelect);
+                        break;
+                    }
+                    default :
+                        break;
+                }
+            }
+
+              $(function(){
+                  //初始化地址选择
+                  var template = Handlebars.compile($("#countryList").html());
+                  $("#country").html("").append(template(json));
+
+                  getCompanyList('');/*全企业列表*/
+                  getTotalTradeMoney();/*全国交易额*/
+                  getNearMonthTrade('');/*最近六个月交易额*/
+                  getGoodsRate('');/*货源报价率、发布率、成单率、同比率*/
+            });
+
+            //全国交易额
+            function getTotalTradeMoney(){
+                $.ajax({
+                    url : $.base+"/center/getTotalTradeMoney",
+                    async: true,
+                    type : "post",
+                    dataType : "json",
+                    success : function(data) {
+                        $('#allMoney').html(data.totalTradeMoney);
+                    }
+                });
+            }
+
+            //最新六个月数据交易额
+            function getNearMonthTrade(){
+                $.ajax({
+                    url : $.base+"/center/getNearMonthTrade",
+                    async: true,
+                    type : "post",
+                    dataType : "json",
+                    success : function(data) {
+                        getTradeChart(data);
+                    }
+                });
+            }
+
+            //货源发布率，货源报价率，货源成单率，货源发布同比增长，货源报价同比增长，货源成单同比增长
+            function getGoodsRate(){
+                $.ajax({
+                    url : $.base+"/center/getGoodsRate",
+                    async: true,
+                    type : "post",
+                    dataType : "json",
+                    success : function(data) {
+                        showRate(data);
+                    }
+                });
+            }
+
+            //企业
+            function getCompanyList(param){
+                $.ajax({
+                    url : $.base+"/center/queryCompanyList",
+                    data : {
+                        "province":param
+                    },
+                    async: true,
+                    type : "post",
+                    dataType : "json",
+                    success : function(data) {
+                        var arrData = data;
+                        arrData.forEach(function(item,i){
+                          if(item.phone != null){
+                              item.phone = item.phone.substring(0,item.phone.length-4)+"*****";
+                          }
+                        });
+
+                    	showList(1,arrData);
+                    }
+                });
+            }
+
+            //待报价货源
+            function getGoodsList(param){
+                $.ajax({
+                    url : $.base+"/center/getProvinceGoods",
+                    data : {
+                        "province":param
+                    },
+                    async: true,
+                    type : "post",
+                    dataType : "json",
+                    success : function(data) {
+                        showList(2,data);
+                    }
+                });
+            }
+
+            //订单
+            function getOrderList(param){
+                $.ajax({
+                    url : $.base+"/center/queryOnwayOrderList",
+                    data : {
+                        "province":param
+                    },
+                    async: true,
+                    type : "post",
+                    dataType : "json",
+                    success : function(data) {
+                        showList(3,data);
+                    }
+                });
+            }
+
+            //闲置的车辆list
+            function getUnusedCarList(param){
+                $.ajax({
+                    url : $.base+"/center/queryCarList",
+                    async: true,
+                    type : "post",
+                    data : {
+                        "province":param
+                    },
+                    dataType : "json",
+                    success : function(data) {
+                        showList(4,data);
+                    }
+                });
+            }
+
+
+            function showList(type,data){
+                $("#companys").hide();
+                $('#offerGoods').hide();
+                $('#onwayOrders').hide();
+                $('#drivers').hide();
+
+                switch (type)
+                {
+                    case 1:
+                    {
+                        $("#companys").show();
+                        var template = Handlebars.compile($("#companyList").html());
+                        $("#companys").html("").append(template(data));
+                        break;
+                    }
+                    case 2:
+                    {
+                        $("#offerGoods").show();
+                        var template = Handlebars.compile($("#goodsList").html());
+                        $("#offerGoods").html("").append(template(data));
+                        break;
+                    }
+                    case 3:
+                    {
+                        $("#onwayOrders").show();
+                        var template = Handlebars.compile($("#orderList").html());
+                        $("#onwayOrders").html("").append(template(data));
+                        break;
+                    }
+                    case 4:
+                    {
+                        $("#drivers").show();
+                        var template = Handlebars.compile($("#driverList").html());
+                        $("#drivers").html("").append(template(data));
+                        break;
+                    }
+                    default :
+                        break;
+                }
+            };
+
+            function getTradeChart(data){
+                var tradeChart = echarts.init(document.getElementById('tradeChart'));
+
+                userSticsOption = {
+                    tooltip: {
+                        formatter: "{c}"
+                    },
+                    title : {
+                        text: '交易额趋势图',
+                        x: 'center',
+                        y: 'top',
+                        textStyle:{
+                            color:'#008ee5',
+                            fontSize:15
+                        }
+                    },
+                    calculable : false,
+                    grid:{
+                        width:'100%',
+                        height:'70%',
+                        borderWidth: 0,
+                        x:'1%',
+                        y:'16%'
+                    },
+                    xAxis : [ {
+                        type : 'category',
+                        data : [data[5].month, data[4].month, data[3].month, data[2].month, data[1].month, data[0].month],
+                        axisLabel: {
+                            show: true,
+                            margin:0,
+                            textStyle:{
+                                color:'#4b5861',
+                                fontFamily:'微软雅黑',
+                                fontSize:10
+                            }
+                        },
+                        axisLine: {
+                            show: false
+                        },
+                        splitLine:{
+                            show: false
+                        }
+                    }],
+                    yAxis : [{
+                        type : 'value',
+                        axisLabel: {
+                            show: false
+                        },
+                        axisLine: {
+                            show: false
+                        },
+                        splitLine:{
+                            show: false
+                        }
+                    }],
+                    series : [
+                        {
+                            type:'bar',
+                            barWidth:20,
+                            barGap:20,
+                            itemStyle:{
+                                normal:{
+                                    color:'#008ee5'
+                                }
+                            },
+                            data:[data[5].trade, data[4].trade, data[3].trade, data[2].trade, data[1].trade, data[0].trade]
+                        }
+                    ]
+                };
+                tradeChart.setOption(userSticsOption,true);
+            }
+
+            function showRate(data){
+                var rateChart = echarts.init(document.getElementById('left_bottom'));
+                var lable = {
+                    normal : {
+                        color: '#008ee5',
+                        label : {
+                            formatter : function (params){
+                                return params.value + '%'
+                            },
+                            textStyle:{
+                                fontSize:15,
+                                fontWeight:'bold'
+                            },
+                            position : 'center'
+                        },
+                        labelLine : {
+                            show : false
+                        }
+                    }
+                };
+
+                var otherLabel = {
+                    normal : {
+                        color: '#02303f',
+                        label : {
+                            show : false
+                        },
+                        labelLine : {
+                            show : false
+                        },
+                    }
+                };
+
+                var radius = [30, 38];
+                var innerradius = [20, 26];
+
+                rateOption = {
+                    legend:{
+                        show: false,
+                        selectedMode: false,
+                        itemGap: 60,
+                        itemWidth: 0,
+                        itemHeight: 0,
+                        y:'45%',
+                        x:'10%',
+                        data:[
+                            {name:'货源发布率环比增长',textStyle:legendtextStyle},
+                            {name:'货源报价率环比增长',textStyle:legendtextStyle},
+                            {name:'货源成单率环比增长',textStyle:legendtextStyle},
+                            {name:''},
+                            {name:''},
+                            {name:''},
+                            {name:'货源发布率同比增长',textStyle:legendtextStyle},
+                            {name:'货源报价率同比增长',textStyle:legendtextStyle},
+                            {name:'货源成单率同比增长',textStyle:legendtextStyle}
+                        ]
+                    },
+                    series : [
+                        {
+                            type : 'pie',
+                            center : ['15%', '22%'],
+                            clockWise:false,
+                            radius : radius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源发布率环比增长', value:data.goodsRate.replace(",",""), itemStyle :lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['15%', '22%'],
+                            radius : innerradius,
+                            clockWise:true,
+                            data : [
+                                {name:'other', value:0,itemStyle: otherLabel},
+                                {name:'货源发布率环比增长', value:data.goodsRate.replace(",",""), itemStyle:lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['50%', '22%'],
+                            clockWise:false,
+                            radius : radius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源报价率环比增长', value:data.pricedRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['50%', '22%'],
+                            clockWise:true,
+                            radius : innerradius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源报价率环比增长', value:data.pricedRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['85%', '22%'],
+                            clockWise:false,
+                            radius : radius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源成单率环比增长', value:data.orderRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['85%', '22%'],
+                            clockWise: true,
+                            radius : innerradius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源成单率环比增长', value:data.orderRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['15%', '65%'],
+                            clockWise:false,
+                            radius : radius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源发布率同比增长', value: data.goodsGrowthRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['15%', '65%'],
+                            clockWise: true,
+                            radius : innerradius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源发布率同比增长', value:data.goodsGrowthRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['50%', '65%'],
+                            clockWise:false,
+                            radius : radius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源报价率同比增长', value: data.pricedGrowthRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['50%', '65%'],
+                            clockWise: true,
+                            radius : innerradius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源报价率同比增长', value:data.pricedGrowthRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['85%', '65%'],
+                            clockWise:false,
+                            radius : radius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源成单率同比增长', value:data.orderGrowthRate.replace(",",""),itemStyle : lable}
+                            ]
+                        },
+                        {
+                            type : 'pie',
+                            center : ['85%', '65%'],
+                            clockWise: true,
+                            radius : innerradius,
+                            data : [
+                                {name:'other', value:0, itemStyle : otherLabel},
+                                {name:'货源成单率同比增长', value: data.orderGrowthRate.replace(",",""),itemStyle : lable}
+                            ]
+                        }
+
+                    ]
+                };
+                rateChart.setOption(rateOption, true);
+            }
+
+            Handlebars.registerHelper("eq", function(v1, v2, options){
+                if (v1 == v2) {
+                    return options.fn(this);
+                }
+                return options.inverse(this);
+            });
+
+        </script>
+    </body>
+</html>

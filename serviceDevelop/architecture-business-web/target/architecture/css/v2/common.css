@@ -1,0 +1,105 @@
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+p,
+blockquote,
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+pre,
+form,
+fieldset,
+legend,
+button,
+input,
+textarea,
+th,
+td {
+    margin: 0;
+    padding: 0
+}
+html{
+    font-size: 20px;
+}
+a {
+    text-decoration: none;
+    cursor: pointer;
+    color: #666;
+}
+a:hover {
+    text-decoration: none;
+}
+/*
+@font-face {
+    font-family: myFont;
+    src: url('../css/font/dqht.otf');
+}
+*/
+body {
+    font: 20px PingFang SC,Helvetica Neue,Helvetica,Lantinghei SC,Hiragino Sans GB,Microsoft YaHei,Arial,sans-serif;
+    /*font-family: myFont;*/
+    background: #fff;
+    overflow-x: auto;
+    color: #333;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-size: 100%;
+    font-weight: 400;
+}
+ul,
+ol {
+    list-style: none
+}
+i {
+    font-style: normal
+}
+button,
+input,
+select,
+textarea {
+    font-size: 100%;
+    font-family: '微软雅黑';
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+    width: 100%;
+    text-align: center
+}
+img{
+    display:block;
+    border:none;
+}
+.clear {
+    clear: both;
+    float: none;
+    height: 0;
+    overflow: hidden
+}
+html{
+    width: 100%;
+    height: 100%;
+}
+body{
+    width: 100%;
+    height: 100%;
+    /*background-image: url("../../images/v2/body_bg.png");*/
+    background-color: rgba(13, 42, 67, 0);
+    background-size: 100% 100%;
+}
+.w{
+    margin: 0 auto;
+}

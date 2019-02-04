@@ -1,0 +1,1591 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="center">
+	<!-- 开启本mapper的namespace下的二级缓存-->
+	<!-- <cache/> -->
+	<!--企业  -->
+	<select id="query_company_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			<if test="city !=null and city !=''">
+			company.id id,
+			company.name companyName,
+      		CONCAT(area.grandparent_name,area.parent_name) name
+			</if>
+			<if test="city ==null or city ==''">
+			DISTINCT(CONCAT(area.grandparent_name,area.parent_name)) name,
+			COUNT(1) value
+			</if>
+		FROM 
+			t_company company
+		LEFT JOIN t_appuser user ON company.app_user_id=user.id
+	    LEFT JOIN t_agent agent ON agent.agent_code=company.agent_code
+	    LEFT JOIN t_area area ON area.id=agent.areaCode
+		WHERE 1=1 
+			AND	company.agent_code is not null
+			AND area.grandparent_name is not null
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+			<if test="city !=null and city !=''">
+			AND	CONCAT(area.grandparent_name,area.parent_name) LIKE CONCAT(#{city},'%')
+			</if>
+			<if test="city ==null or city ==''">
+			GROUP BY CONCAT(area.grandparent_name,area.parent_name)
+			</if>
+			ORDER BY user.create_time DESC
+	</select>
+
+	<!--省份 企业-->
+	<select id="query_pro_company_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+		company.id id,
+		company.name companyName,
+		CONCAT(area.grandparent_name,area.parent_name) name
+		FROM
+		t_company company
+		LEFT JOIN t_appuser user ON company.app_user_id=user.id
+		LEFT JOIN t_agent agent ON agent.agent_code=company.agent_code
+		LEFT JOIN t_area area ON area.id=agent.areaCode
+		WHERE 1=1
+		AND	company.agent_code is not null
+		AND area.grandparent_name is not null
+		<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+		</if>
+		ORDER BY user.create_time DESC
+		LIMIT 200
+	</select>
+
+	<!-- 待报价货源 -->
+	<select id="query_goods_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			<if test="city !=null and city !=''">
+			goods.id goodsId,
+			goods.name goodsName,
+			goods.start_province startProvince,
+			goods.start_city startCity,
+			goods.start_county startCounty,
+			goods.dest_province destProvince,
+			goods.dest_city destCity,
+			goods.dest_county destCounty,
+			goods.distance distance
+			</if>
+			<if test="city ==null or city ==''">
+      		DISTINCT(CONCAT(goods.start_province, CASE WHEN LOCATE('市',goods.start_city)>0 
+												   THEN SUBSTR(goods.start_city FROM 1 FOR CHAR_LENGTH(goods.start_city)-1)
+												   ELSE goods.start_city END
+							)
+					 ) name,
+			COUNT(1) value
+			</if>
+		FROM 
+			t_goods_source goods
+		WHERE 1=1 
+			AND goods.is_delete=0
+			AND goods.statuz=1
+			<!-- AND goods.update_time >= date_sub(now(),interval 3 month) -->
+			<if test="province !=null and province !=''">
+			AND	goods.start_addr LIKE CONCAT(#{province},'%')
+			</if>
+			<if test="city !=null and city !=''">
+			AND	CONCAT(goods.start_province,goods.start_city) LIKE CONCAT(#{city},'%')
+			</if>
+			AND goods.end_time >= now()
+			<if test="city ==null or city ==''">
+			GROUP BY CONCAT(goods.start_province,goods.start_city)
+			</if>
+			ORDER BY goods.update_time DESC
+	</select>
+	<!-- 省份交易额 -->
+	<select id="query_trade_money" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			(SUM(price.price)/100) * #{ratio} 
+		FROM 
+			t_order o 
+		LEFT JOIN t_agent agent ON  agent.agent_code=o.agent_code
+		LEFT JOIN t_price price ON  price.id=o.price_id
+			WHERE 1=1
+			AND 1=1
+			AND o.statuz!=0
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+	</select>
+	<!-- 企业总数 -->
+	<select id="query_company_count" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			count(1) * #{ratio} companyCount
+		FROM 
+			t_company company
+			LEFT JOIN t_appuser app ON app.id=company.app_user_id
+			LEFT JOIN t_agent agent ON agent.agent_code=company.agent_code
+		WHERE 1=1 
+			AND app.is_delete=0
+			AND app.type=1
+			AND app.create_time >= #{startTime}
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+	</select>
+	<!-- 司机总数 -->
+	<select id="query_driver_count" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			count(1) * #{ratio} driverCount
+		FROM 
+			t_driver driver
+			LEFT JOIN t_appuser app ON app.id =driver.app_user_id
+			LEFT JOIN t_agent agent ON agent.agent_code=driver.agent_code
+		WHERE 1=1 
+			AND app.is_delete=0
+			AND app.type=2
+			AND app.create_time >= #{startTime}
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+	</select>
+	<!-- 已成单货源数 -->
+	<select id="query_orderGoods_count" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			count(1) * #{ratio} orderGoodsCount
+		FROM 
+			t_goods_source goods
+			LEFT JOIN t_agent agent ON agent.agent_code=goods.agent_code
+		WHERE 1=1 
+			AND goods.statuz=3
+			AND goods.update_time >= #{startTime}
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+	</select>
+	<!-- 已发布货源数 -->
+	<select id="query_goods_count" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			count(1) * #{ratio} goodsCount
+		FROM 
+			t_goods_source goods
+			LEFT JOIN t_agent agent ON agent.agent_code=goods.agent_code
+		WHERE 1=1 
+			AND goods.update_time >= #{startTime}
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+	</select>
+	<!-- 已报价货源数 -->
+	<select id="query_priced_goods_count" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			count(1) * #{ratio} pricedGoodsCount
+		FROM 
+			t_goods_source goods
+			LEFT JOIN t_agent agent ON agent.agent_code=goods.agent_code
+		WHERE 1=1 
+			AND goods.statuz != 1
+			AND goods.update_time >= #{startTime}
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+	</select>
+	<!-- 企业详情 -->
+	<select id="query_company_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			company.name companyName,
+			company.addr companyAddr,
+			company.agent_code agentCode,
+			company.contact_mobile companyMobile
+		FROM 
+			t_company company
+		WHERE 1=1 
+			AND id=#{companyId}
+	</select>
+	<!-- 货源详情 -->
+	<select id="query_goods_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			goods.id goodsId,
+			goods.goods_source_num goodsSourceNum,
+			goods.name goodsName,
+			goods.start_addr startAddr,
+			goods.dest_addr destAddr,
+			goods.distance distance,
+			goods.car_type carType,
+			goods.car_length carLength,
+			goods.weight weight,
+			goods.volume volume,
+			goods.is_weight_goods isWeightGoods,
+			date_format(goods.load_start_time,'%Y-%m-%d %H:%i') startTime,
+			date_format(goods.end_time,'%Y-%m-%d %H:%i') endTime,
+			type.content goodsType
+		FROM
+			t_goods_source goods
+		LEFT JOIN t_goods_type type ON type.id=goods.goods_type_id
+		WHERE 1=1
+		AND goods.id=#{goodsId}
+	</select>
+	<!--订单list -->
+	<select id="query_order_list" parameterType="java.util.Map" resultType="java.util.Map">
+	SELECT 
+			CONCAT(goods.start_province,
+				   CASE WHEN LOCATE('市',goods.start_city)>0 
+				   THEN SUBSTR(goods.start_city FROM 1 FOR CHAR_LENGTH(goods.start_city)-1)
+				   ELSE goods.start_city
+				   END) startAddr,
+			CONCAT(goods.dest_province,
+				   CASE WHEN LOCATE('市',goods.dest_city)>0 
+				   THEN SUBSTR(goods.dest_city FROM 1 FOR CHAR_LENGTH(goods.dest_city)-1)
+				   ELSE goods.dest_city
+				   END
+				   )destAddr
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		WHERE 1=1
+		AND o.is_delete=0
+		AND o.create_time >= date_sub(now(),interval 2 month)
+		AND (goods.start_province is not null AND goods.start_city is not null AND goods.start_county is not null)
+		AND (goods.dest_province is not null AND goods.dest_city is not null AND goods.dest_county is not null)
+		AND o.statuz BETWEEN 1 AND 3
+    	GROUP BY CONCAT(goods.start_province,goods.start_city,goods.dest_province,goods.dest_city)
+	</select>
+	<!-- 全国交易额 -->
+	<select id="query_total_tradeMoney"  parameterType="java.util.Map" resultType="java.lang.Long">
+		<!-- SELECT
+			(SUM(price.price)/100) * #{ratio}
+		FROM
+			t_order o
+		LEFT JOIN t_price price ON price.id=o.price_id
+		WHERE  1=1
+   		AND o.statuz!=0
+   		AND o.create_time >= #{startTime}
+   		<if test="createTime !=null and createTime !=''">
+			AND	o.create_time LIKE CONCAT(#{createTime},'%')
+		</if>  -->
+        
+        <!-- 
+		SELECT (SUM(company_payed_money)/100) * #{ratio}
+		FROM t_finance
+		WHERE  1 = 1
+		AND create_time >= #{startTime}  
+		<if test="createTime !=null and createTime !=''">
+			AND	create_time LIKE CONCAT(#{createTime},'%')
+		</if>
+		 -->
+		SELECT IFNULL((SUM(t.company_payed_money)/100),0) * #{ratio}
+         FROM t_finance t  ,t_order o
+         WHERE  1 = 1  and t.order_id=o.id and o.is_delete=0
+         AND t.create_time >= #{startTime}
+          <if test="createTime !=null and createTime !=''">
+             AND     t.create_time LIKE CONCAT(#{createTime},'%')
+          </if>
+          <if test="agent_code !=null and agent_code !=''">
+             AND    CAST(o.agent_code AS CHAR) LIKE CONCAT(#{agent_code},'%')
+          </if>
+	</select>
+	<!-- 当天企业增长量 -->
+	<select id="query_today_company_count"  parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+    		count(1) * #{ratio} count
+		FROM
+			t_appuser app
+		WHERE  1=1
+  		AND app.type=1
+		AND to_days(create_time)=to_days(now())
+	</select>
+	<!-- 当天司机增长量 -->
+	<select id="query_today_driver_count"  parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+    		count(1) * #{ratio} count
+		FROM
+			t_appuser app
+		WHERE  1=1
+  		AND app.type=2
+		AND to_days(create_time)=to_days(now())
+	</select>
+	<!-- 货源发布率 -->
+	<select id="query_goods_rate" parameterType="java.util.Map" resultType="java.lang.String">
+	 	SELECT 
+			FORMAT(
+			(((SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			 goods.update_time BETWEEN date_sub(NOW(), interval 6 MONTH) AND NOW())
+			-
+			(SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			 goods.update_time BETWEEN date_sub(NOW(), interval 12 MONTH) AND date_sub(NOW(), interval 6 MONTH))
+			)
+			/
+			(SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			 goods.update_time BETWEEN date_sub(NOW(), interval 12 MONTH) AND date_sub(NOW(), interval 6 MONTH))
+			) * 100 * #{ratio} ,0)
+	</select>
+	<!-- 货源报价率 -->
+	<select id="query_pricedGoods_rate" parameterType="java.util.Map" resultType="java.lang.String">
+		SELECT 
+			FORMAT(
+			(((SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			 goods.statuz!=1 AND goods.update_time BETWEEN  date_sub(NOW(), interval 6 MONTH) AND NOW())
+			-
+			(SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			 goods.statuz!=1 AND goods.update_time BETWEEN date_sub(NOW(), interval 12 MONTH) AND date_sub(NOW(), interval 6 MONTH))
+			)
+			/
+			(SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			 goods.statuz!=1 AND goods.update_time BETWEEN date_sub(NOW(), interval 12 MONTH) AND date_sub(NOW(), interval 6 MONTH))
+			) * 100 * #{ratio},0)
+	</select>
+	<!-- 货源成单率 -->
+	<select id="query_orderGoods_rate" parameterType="java.util.Map" resultType="java.lang.String">
+		SELECT 
+		FORMAT(
+		(((SELECT count(1) from t_goods_source goods WHERE 
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		 goods.statuz =3 AND goods.update_time BETWEEN date_sub(NOW(), interval 6 MONTH) AND NOW())
+		-
+		(SELECT count(1) from t_goods_source goods WHERE
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		 goods.statuz =3 AND goods.update_time BETWEEN date_sub(NOW(), interval 12 MONTH) AND date_sub(NOW(), interval 6 MONTH))
+		)
+		/
+		(SELECT count(1) from t_goods_source goods WHERE
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		 goods.statuz =3 AND goods.update_time BETWEEN date_sub(NOW(), interval 12 MONTH) AND date_sub(NOW(), interval 6 MONTH))
+		) * 100 *  #{ratio},0)
+	</select>
+	<!-- 根据出发地，目的地查询订单list -->
+	<select id="query_order_list_bycity" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			goods.start_city startCity,
+			goods.start_county startCounty,
+			goods.dest_city destCity,
+			goods.dest_county destCounty,
+			o.id orderId,
+			o.order_num orderNum
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		WHERE 1=1
+		AND CONCAT(goods.start_province,goods.start_city) like CONCAT(#{startCity},'%')
+		AND CONCAT(goods.dest_province,goods.dest_city) like CONCAT(#{destCity},'%')
+		AND o.create_time >= date_sub(now(),interval 3 month)
+		AND (goods.start_province is not null AND goods.start_city is not null AND goods.start_county is not null)
+		AND (goods.dest_province is not null AND goods.dest_city is not null AND goods.dest_county is not null)
+		AND o.statuz BETWEEN 1 AND 5
+	</select>
+	<!-- 订单详情 -->
+	<select id="query_order_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			o.order_num orderNum,
+			goods.start_addr startAddr,
+			goods.dest_addr destAddr,
+			goods.distance distance,
+			goods.weight weight,
+			goods.volume volume,
+			goods.is_weight_goods isWeightGoods,
+			type.content goodsType,
+	        carrier.`name` driverName,
+	        carrier.phone driverMobile,
+      		com.`name` comName
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		LEFT JOIN t_goods_type type ON type.id=goods.goods_type_id
+		LEFT JOIN t_company com ON com.id=o.company_id
+	    LEFT JOIN t_carrier carrier ON carrier.id=o.carrier_id
+		<!-- LEFT JOIN t_driver driver ON (driver.id=carrier.bean_id and carrier.type=2) -->
+		WHERE 1=1 
+		AND o.id=#{orderId}
+	</select>
+	<!-- 闲置的车辆 -->
+	<select id="query_unused_car_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			<if test="city !=null and city !=''">
+			DISTINCT
+			car.id id,
+			driver.name driverName,
+			driver.mobile phone,
+			car.car_num carNum
+			</if>
+			<if test="city ==null or city ==''">
+			DISTINCT(CONCAT(area.grandparent_name,area.parent_name)) name,
+			COUNT(1) value
+			</if>
+		FROM 
+			t_driver driver
+		LEFT JOIN t_car car ON (car.driver_id=driver.id AND car.car_num is not null)
+		LEFT JOIN t_carrier carr ON (carr.bean_id=driver.id AND carr.type=2)
+	    LEFT JOIN t_agent agent ON agent.agent_code=driver.agent_code
+	    LEFT JOIN t_area area ON area.id=agent.areaCode
+		LEFT JOIN t_order o ON (o.carrier_id=carr.id AND carr.type=2 AND o.statuz not IN(1,2,3,4,5))
+		LEFT JOIN t_appuser user ON (user.id=driver.app_user_id)
+		WHERE 1=1 
+		AND	driver.agent_code is not null
+		AND area.grandparent_name is not null
+		AND user.statuz =1
+		<if test="province !=null and province !=''">
+		AND	agent.province LIKE CONCAT(#{province},'%')
+		</if>
+		<if test="city !=null and city !=''">
+		AND	CONCAT(area.grandparent_name,area.parent_name) LIKE CONCAT(#{city},'%')
+		GROUP BY driver.name, car.car_num
+		</if>
+		<if test="city ==null or city ==''">
+		GROUP BY CONCAT(area.grandparent_name,area.parent_name)
+		</if>
+	</select>
+
+	<!--省份 闲置的车辆 -->
+	<select id="query_pro_unused_car_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			DISTINCT
+			car.id id,
+			driver.name driverName,
+			driver.mobile phone,
+			car.car_num carNum
+		FROM
+		t_driver driver
+		LEFT JOIN t_car car ON (car.driver_id=driver.id AND car.car_num is not null)
+		LEFT JOIN t_carrier carr ON (carr.bean_id=driver.id AND carr.type=2)
+		LEFT JOIN t_agent agent ON agent.agent_code=driver.agent_code
+		LEFT JOIN t_area area ON area.id=agent.areaCode
+		LEFT JOIN t_order o ON (o.carrier_id=carr.id AND carr.type=2 AND o.statuz not IN(1,2,3,4,5))
+		LEFT JOIN t_appuser user ON (user.id=driver.app_user_id)
+		WHERE 1=1
+		AND	driver.agent_code is not null
+		AND area.grandparent_name is not null
+		AND user.statuz =1
+		<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+		</if>
+		LIMIT 200
+	</select>
+
+	<!-- 闲置的车辆 详情-->
+	<select id="query_car_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			driver.`name` driverName,
+		    loc.addr addr,
+		    car.car_length carLength,
+		    car.type carType,
+		    car.load_weight loadWeight,
+			driver.mobile phone
+		FROM
+			t_car car
+		LEFT JOIN t_driver driver ON driver.id=car.driver_id
+		LEFT JOIN t_location loc ON loc.car_id=car.id AND loc.order_num=0
+		WHERE 1=1
+		AND car.id=#{carId}
+		LIMIT 1
+	</select>
+	<!-- 查询大屏系数配置 -->
+	<select id="query_screen_set" parameterType="java.lang.Integer" resultType="com.zt3000.model.ScreenSet">
+		SELECT 
+			id id,
+			type type,
+			start_time startTime,
+			type_desc typeDesc,
+			ratio ratio
+		FROM 
+			t_dispatch_screen_set
+		WHERE 1=1
+		AND	type=#{type}
+	</select>
+	<!-- 查询最新四个季度 -->
+	<select id="query_quarter" resultType="java.util.Map">
+		SELECT
+			concat(
+				date_format(app.create_time, '%Y'),'\n','第',
+				FLOOR( (date_format(app.create_time, '%m') + 2) / 3 ),'季度'
+			) quar
+		FROM
+			t_appuser app 
+		GROUP BY
+			concat(
+				date_format(app.create_time, '%Y'),
+				FLOOR((date_format(app.create_time, '%m') + 2) / 3)
+			) ORDER BY concat(
+				date_format(app.create_time, '%Y'),
+				FLOOR((date_format(app.create_time, '%m') + 2) / 3)
+			) desc LIMIT 4
+	</select>
+	<!-- 司机，企业数量 -->
+	<select id="query_useramount_byquarter" parameterType="java.util.Map" resultType="java.lang.Long">
+		SELECT 
+			count(1) * #{ratio} count
+		FROM
+			t_appuser user
+		WHERE 1=1 
+			AND user.is_delete=0
+			AND user.type=#{type}
+			AND user.create_time >= #{startTime}
+   <![CDATA[AND user.create_time <= #{createTime}]]>
+	</select>
+	<!-- 发布货源同比增长率 -->
+	<select id="query_goods_growth" parameterType="java.util.Map" resultType="java.lang.String">
+		SELECT 
+			FORMAT(
+			(((SELECT count(1) from t_goods_source goods WHERE
+				<if test="agent_code !=null and agent_code !=''">
+		            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+		            </if>
+			 goods.update_time BETWEEN CONCAT(year(now()),'-01-01') AND NOW())
+			-
+			(SELECT count(1) from t_goods_source goods WHERE
+				 <if test="agent_code !=null and agent_code !=''">
+		            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+		            </if>
+			 goods.update_time BETWEEN CONCAT(year(now())-1,'-01-01') AND date_add(now(),interval -1 year))
+			)
+			/
+			(SELECT count(1) from t_goods_source goods WHERE 
+				<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+			goods.update_time BETWEEN CONCAT(year(now())-1,'-01-01') AND date_add(now(),interval -1 year))
+			) * 100 * #{ratio} ,0)
+	</select>
+	<!-- 货源报价同比增长率 -->
+	<select id="query_price_growth" parameterType="java.util.Map" resultType="java.lang.String">
+	SELECT 
+		FORMAT(
+		(((SELECT count(1) from t_goods_source goods WHERE 
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		goods.statuz!=1 AND goods.update_time BETWEEN CONCAT(year(now()),'-01-01') AND NOW())
+		-
+		(SELECT count(1) from t_goods_source goods WHERE
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		 goods.statuz!=1 AND goods.update_time BETWEEN CONCAT(year(now())-1,'-01-01') AND date_add(now(),interval -1 year))
+		)
+		/
+		(SELECT count(1) from t_goods_source goods WHERE
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>	
+		 goods.statuz!=1 AND goods.update_time BETWEEN CONCAT(year(now())-1,'-01-01') AND date_add(now(),interval -1 year))
+		) * 100 * #{ratio},0)
+	</select>
+	<!-- 货源成单同比增长率 -->
+	<select id="query_order_growth" parameterType="java.util.Map" resultType="java.lang.String">
+	SELECT 
+		FORMAT(
+		(((SELECT count(1) from t_goods_source goods WHERE
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		 goods.statuz =3 AND goods.update_time BETWEEN CONCAT(year(now()),'-01-01') AND NOW())
+		-
+		(SELECT count(1) from t_goods_source goods WHERE 
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		goods.statuz =3 AND goods.update_time BETWEEN CONCAT(year(now())-1,'-01-01') AND date_add(now(),interval -1 year))
+		)
+		/
+		(SELECT count(1) from t_goods_source goods WHERE 
+			<if test="agent_code !=null and agent_code !=''">
+	            	CAST(agent_code AS CHAR) LIKE CONCAT(${agent_code},'%') and
+	            </if>
+		goods.statuz =3 AND goods.update_time BETWEEN CONCAT(year(now())-1,'-01-01') AND date_add(now(),interval -1 year))
+		) * 100 * #{ratio},0)
+	</select>
+	<select id="query_order_location" parameterType="java.util.Map" resultType="java.util.Map">
+	    SELECT 
+	     	goods.start_lon lon,
+       		goods.start_lat lat
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		WHERE  1=1
+   		AND o.statuz!=0
+   		AND o.create_time between date_add(now(), interval - 3 minute) and now()
+	</select>
+	<!-- 省份货源列表 -->
+	<select id="query_province_goods_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			goods.id goodsId,
+			goods.name goodsName,
+			goods.start_city startCity,
+			goods.start_county startCounty,
+			goods.dest_city destCity,
+			goods.dest_county destCounty,
+			goods.distance distance,
+			goods.car_type carType,
+			goods.car_length carLength,
+			goods.volume volume,
+			goods.weight weight,
+			goods.is_weight_goods isWeightGoods,
+			date_format(goods.load_start_time,'%Y-%m-%d') startTime,
+			date_format(goods.end_time,'%Y-%m-%d') endTime
+		FROM 
+			t_goods_source goods
+		WHERE 1=1 
+			AND goods.is_delete=0
+			AND goods.statuz=1
+			<!-- AND goods.update_time >= date_sub(now(),interval 3 month) -->
+			<if test="province !=null and province !=''">
+			AND	goods.start_addr LIKE CONCAT(#{province},'%')
+			</if>
+			AND goods.end_time >= now()
+			ORDER BY goods.update_time DESC
+			LIMIT 200
+	</select>
+	
+	<!-- 手机版新增接口 -->
+	<!--企业  -->
+	<select id="get_company_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			company.id id,
+			company.name companyName,
+			company.agent_code agentCode,
+			company.phone phone,
+			company.addr address
+		FROM 
+			t_company company
+	    LEFT JOIN t_agent agent ON agent.agent_code=company.agent_code
+		WHERE 1=1 
+			AND company.is_delete=0
+			AND	company.agent_code is not null
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+			LIMIT 200
+	</select>
+	
+	<!-- 闲置的车辆 详情-->
+	<select id="query_car_list" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+				car.id id,
+				driver.name driveName,
+				car.car_length carLength,
+			    car.type carType,
+			    car.load_weight loadWeight
+			FROM 
+				t_driver driver
+			LEFT JOIN t_car car ON (car.driver_id=driver.id AND car.car_num is not null)
+			LEFT JOIN t_carrier carr ON (carr.bean_id=driver.id AND carr.type=2)
+		    LEFT JOIN t_agent agent ON agent.agent_code=driver.agent_code
+		    LEFT JOIN t_area area ON area.id=agent.areaCode
+			LEFT JOIN t_order o ON (o.carrier_id=carr.id AND carr.type=2 AND o.statuz not IN(1,2,3,4,5))
+			LEFT JOIN t_appuser user ON (user.id=driver.app_user_id)
+			WHERE 1=1 
+			AND driver.is_delete=0
+			AND	driver.agent_code is not null
+			AND area.grandparent_name is not null
+			AND user.statuz =1
+			<if test="province !=null and province !=''">
+			AND	agent.province LIKE CONCAT(#{province},'%')
+			</if>
+			LIMIT 200
+	</select>
+	
+	<!--在途订单 -->
+	<select id="query_onway_orders" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			o.order_num orderNum,
+			o.id orderId,
+			goods.start_addr startAddr,
+			goods.dest_addr destAddr,
+			goods.distance distance,
+			goods.weight weight,
+			goods.volume volume,
+			goods.is_weight_goods isWeightGoods,
+			company.`name` company,
+			type.content goodsType,
+	        carrier.`name` driverName,
+	        carrier.phone driverMobile,
+	        goods.name goodsName,
+			goods.start_city startCity,
+			goods.start_county startCounty,
+			goods.dest_city destCity,
+			goods.dest_county destCounty,
+			goods.car_type carType,
+			goods.car_length carLength,
+			date_format(goods.load_start_time,'%Y-%m-%d') startTime,
+			date_format(goods.end_time,'%Y-%m-%d %H:%i') endTime
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		LEFT JOIN t_goods_type type ON type.id=goods.goods_type_id
+	    LEFT JOIN t_carrier carrier ON carrier.id=o.carrier_id
+	    LEFT JOIN t_company company ON company.id=o.company_id
+		WHERE 1=1 
+		AND o.is_delete=0
+		AND o.create_time >= date_sub(now(),interval 2 month)
+		AND (goods.start_province is not null AND goods.start_city is not null AND goods.start_county is not null)
+		AND (goods.dest_province is not null AND goods.dest_city is not null AND goods.dest_county is not null)
+		<if test="province !=null and province !=''">
+		AND	(goods.start_addr LIKE CONCAT(#{province},'%')  OR	goods.dest_addr LIKE CONCAT(#{province},'%'))
+		</if>
+		AND o.statuz BETWEEN 1 AND 3
+		ORDER BY o.create_time DESC
+		LIMIT 200
+	</select>
+	
+	
+	<!-- update 2019/1/10 by sunqiang -->
+	<!-- 注册增长趋势 -->
+	<select id="query_register_speed" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  				DATE_FORMAT(company.create_time, '%y/%m') date,
+  				COUNT(*) companyCount
+			FROM
+  				t_company company
+ 			LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+  			LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+  			LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+			WHERE 1 = 1
+  				AND company.is_delete = 0
+  				AND appuser.statuz = '1'
+  				AND tarea.grandparent_name IS NOT NULL
+  	  <if test="city !=null and city !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+	  </if>
+	  <if test="province !=null and province !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+	  </if>
+			GROUP BY DATE_FORMAT(company.create_time, '%y%m') DESC
+			LIMIT 1,6
+	</select>
+	
+	<!-- 企业区域分布 -->
+	<select id="query_company_distribution" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  					areaCount.area,
+  					CONCAT(ROUND(areaCount.companyCount / allCount.companyCount * 100,2),'%') percent,
+  					areaCount.companyCount arercompanyCount,
+  					allCount.companyCount allcompanyCount
+			FROM
+  					(SELECT
+  					<if test="city !=null and city !=''">
+  							tarea.area_name area,
+  					</if>
+  					<if test="(province !=null and province !='') and (city ==null or city =='')">
+  							tarea.parent_name area,
+  					</if>
+  					<if test="(province ==null or province =='') and (city ==null or city =='')">
+  							tarea.grandparent_name area,
+  					</if>
+    						COUNT(*) companyCount
+  					FROM
+    						t_company company
+   				 	LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  						AND company.is_delete = 0
+    					AND appuser.statuz = '1'
+    					AND tarea.grandparent_name IS NOT NULL
+					<if test="city !=null and city !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						
+					</if>
+					<if test="province !=null and province !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+					</if>
+					<if test="city !=null and city !=''">
+						GROUP BY tarea.area_name
+					</if>
+					<if test="(province !=null and province !='') and (city ==null or city =='')">
+						GROUP BY tarea.parent_name
+					</if>
+					<if test="(city ==null or city =='') and (province ==null or province =='')">
+						GROUP BY tarea.grandparent_name
+					</if>
+  					) areaCount,
+  					(SELECT
+    						COUNT(*) companyCount
+  					FROM
+    						t_company company
+    				LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  							AND company.is_delete = 0
+     						AND appuser.statuz = '1'
+    						AND tarea.grandparent_name IS NOT NULL
+    					<if test="city !=null and city !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						</if>
+						<if test="province !=null and province !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+						</if>
+    				) allCount
+    				ORDER BY areaCount.companyCount DESC
+    				LIMIT 9 
+	</select>
+	<!-- 企业详情 -->
+	<select id="new_query_company_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			company.name companyName,
+			company.addr companyAddr,
+			company.agent_code agentCode,
+			company.contact_mobile companyMobile,
+			SUM(torder.pay_money) AS payMoneySum,
+			COUNT(1) AS orderCount
+		FROM 
+			t_company company
+		LEFT JOIN t_order torder ON torder.company_id = company.id
+		WHERE 1=1 
+			AND company.id=#{companyId}
+			AND torder.company_id IS NOT NULL
+			AND torder.statuz > 2 
+			AND torder.is_delete = 0
+	</select>
+	<!--企业列表-->
+	<select id="new_query_pro_company_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+		company.id id,
+		company.name companyName,
+		CONCAT(area.grandparent_name,area.parent_name,area.area_name) companyAddr,
+		SUM(torder.pay_money) AS payMoneySum
+		FROM
+		t_company company
+		LEFT JOIN t_appuser user ON company.app_user_id=user.id
+		LEFT JOIN t_agent agent ON agent.agent_code=company.agent_code
+		LEFT JOIN t_area area ON area.id=agent.areaCode
+		LEFT JOIN t_order torder ON torder.company_id = company.id
+		WHERE 1=1
+		AND	company.agent_code is not null
+		AND area.grandparent_name is not null
+		AND user.statuz = '1'
+		<if test="province !=null and province !=''">
+			AND	CONCAT(area.grandparent_name,area.parent_name) LIKE CONCAT(#{province},'%')
+		</if>
+		<if test="city !=null and city !=''">
+			AND	CONCAT(area.grandparent_name,area.parent_name) LIKE CONCAT('%',#{city})
+		</if>
+		<if test="county !=null and county !=''">
+			AND	CONCAT(area.grandparent_name,area.parent_name,area_name) LIKE CONCAT('%',#{county})
+		</if>
+		GROUP BY company.id
+		ORDER BY payMoneySum DESC,user.create_time DESC
+		LIMIT 200
+	</select>
+	<!--在途订单 -->
+	<select id="new_query_onway_orders" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			o.order_num orderNum,
+			o.id orderId,
+			goods.start_addr startAddr,
+			goods.dest_addr destAddr,
+			goods.distance distance,
+			goods.weight weight,
+			goods.volume volume,
+			goods.is_weight_goods isWeightGoods,
+			company.name company,
+			type.content goodsType,
+	        carrier.name driverName,
+	        goods.name goodsName,
+			goods.start_city startCity,
+			goods.start_county startCounty,
+			goods.dest_city destCity,
+			goods.dest_county destCounty,
+			goods.car_type carType,
+			goods.car_length carLength,
+			date_format(goods.load_start_time,'%Y-%m-%d') startTime,
+			date_format(goods.end_time,'%Y-%m-%d %H:%i') endTimel
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		LEFT JOIN t_goods_type type ON type.id=goods.goods_type_id
+	    LEFT JOIN t_carrier carrier ON carrier.id=o.carrier_id
+	    LEFT JOIN t_company company ON company.id=o.company_id
+		WHERE 1=1 
+		AND o.is_delete=0
+		AND o.create_time >= date_sub(now(),interval 2 month)
+		AND (goods.start_province is not null AND goods.start_city is not null AND goods.start_county is not null)
+		AND (goods.dest_province is not null AND goods.dest_city is not null AND goods.dest_county is not null)
+		<if test="province !=null and province !=''">
+			AND	(goods.start_province LIKE CONCAT(#{province},'%') OR goods.dest_province LIKE CONCAT(#{province},'%'))
+		</if>
+		<if test="city !=null and city !=''">
+			AND	(goods.start_city LIKE CONCAT(#{city},'%') OR goods.dest_city LIKE CONCAT(#{city},'%'))
+		</if>
+		AND o.statuz BETWEEN 1 AND 3
+		ORDER BY o.create_time DESC
+		LIMIT 200
+	</select>
+	<!--货物类型占比 -->
+	<select id="get_goods_type_percent" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT typeCount.content, CONCAT(ROUND(typeCount.goodsCount / allCount.goodsCount * 100,2),'%') percent,
+			typeCount.goodsCount typegoodsCount,
+			allCount.goodsCount allgoodsCount
+			FROM (
+					SELECT tgt.content content, COUNT(*) goodsCount FROM zt3000.`t_goods_source` tgs 
+					LEFT JOIN zt3000.`t_goods_type` tgt ON tgs.`goods_type_id` = tgt.`id`
+					WHERE 1=1
+					AND tgs.is_delete=0
+					GROUP BY tgs.goods_type_id
+				 )typeCount,
+				 (
+					SELECT COUNT(*) goodsCount FROM zt3000.`t_goods_source` tgs 
+					WHERE 1=1 AND tgs.is_delete=0
+				 )allCount
+			ORDER BY typeCount.goodsCount DESC
+			LIMIT 9 
+	</select>
+	<!-- 订单地域占比 -->
+	<select id="get_order_area_percent" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  					areaCount.area,
+  					CONCAT(ROUND(areaCount.orderCount / allCount.orderCount * 100,2),'%') percent,
+  					areaCount.orderCount areaOrderCount,
+  					allCount.orderCount allOrderCount
+			FROM
+  					(SELECT
+  					<if test="city !=null and city !=''">
+  							tarea.area_name area,
+  					</if>
+  					<if test="(province !=null and province !='') and (city ==null or city =='')">
+  							tarea.parent_name area,
+  					</if>
+  					<if test="(province ==null or province =='') and (city ==null or city =='')">
+  							tarea.grandparent_name area,
+  					</if>
+    						COUNT(*) orderCount
+  					FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+   				 	LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  						AND o.is_delete = 0
+    					AND appuser.statuz = '1'
+    					AND tarea.grandparent_name IS NOT NULL
+					<if test="city !=null and city !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						
+					</if>
+					<if test="province !=null and province !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+					</if>
+					<if test="city !=null and city !=''">
+						GROUP BY tarea.area_name
+					</if>
+					<if test="(province !=null and province !='') and (city ==null or city =='')">
+						GROUP BY tarea.parent_name
+					</if>
+					<if test="(city ==null or city =='') and (province ==null or province =='')">
+						GROUP BY tarea.grandparent_name
+					</if>
+  					) areaCount,
+  					(SELECT
+    						COUNT(*) orderCount
+      				FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+    				LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  							AND o.is_delete = 0
+     						AND appuser.statuz = '1'
+    						AND tarea.grandparent_name IS NOT NULL
+    					<if test="city !=null and city !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						</if>
+						<if test="province !=null and province !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+						</if>
+    				) allCount
+    				ORDER BY areaCount.orderCount DESC
+    				LIMIT 9 
+	</select>
+	<!-- 订单交易额占比 -->
+	<select id="get_order_money_percent" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  					areaCount.area,
+  					areaCount.orderCount,
+  					CONCAT(ROUND(areaCount.orderPayMoneySum / allCount.orderPayMoneySum * 100,2),'%') percent,
+  					areaCount.orderPayMoneySum areaOrderPayMoneySum,
+  					allCount.orderPayMoneySum allOrderPayMoneySum
+			FROM
+  					(SELECT
+  					<if test="city !=null and city !=''">
+  							tarea.area_name area,
+  					</if>
+  					<if test="(province !=null and province !='') and (city ==null or city =='')">
+  							tarea.parent_name area,
+  					</if>
+  					<if test="(province ==null or province =='') and (city ==null or city =='')">
+  							tarea.grandparent_name area,
+  					</if>
+    						SUM(o.pay_money) orderPayMoneySum,
+    						COUNT(1) orderCount
+  					FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+   				 	LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  						AND o.is_delete = 0
+    					AND appuser.statuz = '1'
+    					AND tarea.grandparent_name IS NOT NULL
+					<if test="city !=null and city !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						
+					</if>
+					<if test="province !=null and province !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+					</if>
+					<if test="city !=null and city !=''">
+						GROUP BY tarea.area_name
+					</if>
+					<if test="(province !=null and province !='') and (city ==null or city =='')">
+						GROUP BY tarea.parent_name
+					</if>
+					<if test="(city ==null or city =='') and (province ==null or province =='')">
+						GROUP BY tarea.grandparent_name
+					</if>
+  					) areaCount,
+  					(SELECT
+    						SUM(o.pay_money) orderPayMoneySum
+      				FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+    				LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  							AND o.is_delete = 0
+     						AND appuser.statuz = '1'
+    						AND tarea.grandparent_name IS NOT NULL
+    					<if test="city !=null and city !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						</if>
+						<if test="province !=null and province !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+						</if>
+    				) allCount
+    				ORDER BY areaCount.orderPayMoneySum DESC
+    				LIMIT 9 
+	</select>
+	<!-- 交易额总额趋势 -->
+	<select id="get_order_money_speed" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  				DATE_FORMAT(o.create_time, '%y/%m') date,
+  				SUM(o.pay_money) payMoneyOfMonth
+			FROM
+  				t_order o
+  			LEFT JOIN t_company company ON o.company_id = company.id
+ 			LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+  			LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+  			LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+			WHERE 1 = 1
+  				AND o.is_delete = 0
+  				AND appuser.statuz = '1'
+  				AND tarea.grandparent_name IS NOT NULL
+  	  <if test="city !=null and city !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+	  </if>
+	  <if test="province !=null and province !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+	  </if>
+			GROUP BY DATE_FORMAT(o.create_time, '%y%m') DESC
+			LIMIT 1,6
+	</select>
+	<!-- 订单详情 -->
+	<select id="get_new_order_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+		o.order_num orderNum,
+		goods.name goodsName,
+		goods.start_addr startAddr,
+		goods.dest_addr destAddr,
+		goods.distance distance,
+		goods.weight weight,
+		goods.volume volume,
+		goods.company_contact_name contactName,
+		goods.receiver_name receiverName,
+		o.carrier_id carrierId,
+		carrier.type carrierType,
+		goods.start_province startProvince,
+		goods.start_city startCity,
+		goods.dest_province destProvince,
+		goods.dest_city destCity
+		FROM
+			t_order o
+		LEFT JOIN t_goods_source goods ON goods.id=o.goods_source_id
+		LEFT JOIN t_goods_type TYPE ON type.id=goods.goods_type_id
+		LEFT JOIN t_company com ON com.id=o.company_id
+		LEFT JOIN t_carrier carrier ON o.carrier_id = carrier.id
+		WHERE 1=1 
+		AND o.id=#{orderId}
+	</select>
+	<!-- 承运人信息 -->
+	<select id="get_carrier_detail" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT carrier.name carrierName, carrier.phone carrierPhone, car.car_num carName, SUM(o.pay_money) moneySum, COUNT(*) orderCount 
+		FROM t_carrier carrier 
+		LEFT JOIN t_driver driver ON driver.id=carrier.bean_id
+		LEFT JOIN t_car car ON car.driver_id=driver.id
+		LEFT JOIN t_order o ON o.carrier_id = carrier.id
+		WHERE 1=1 
+		AND carrier.id =#{carrierId}
+	</select>
+	<!--待报价货源 -->
+	<select id="get_new_goods_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+				goods.id goodsId,
+				goods.name goodsName,
+				goods.start_province startProvince,
+				goods.start_city startCity,
+				goods.start_county startCounty,
+				goods.dest_province destProvince,
+				goods.dest_city destCity,
+				goods.dest_county destCounty,
+				goods.distance distance,
+				goods.car_type carType,
+				goods.weight weight,
+				goods.car_length carLength,
+				DATE_FORMAT(goods.create_time, '%Y-%m-%d') createTime
+		FROM t_goods_source goods
+		WHERE 1 = 1
+			  AND goods.is_delete = 0
+			  AND goods.statuz = 1
+			  AND (goods.start_province IS NOT NULL AND goods.start_city IS NOT NULL AND goods.start_county IS NOT NULL)
+			  AND (goods.dest_province IS NOT NULL AND goods.dest_city IS NOT NULL AND goods.dest_county IS NOT NULL)
+		<if test="province !=null and province !=''">
+			  AND	(goods.start_province LIKE CONCAT(#{province},'%') OR goods.dest_province LIKE CONCAT(#{province},'%'))
+		</if>
+		<if test="city !=null and city !=''">
+			  AND	(goods.start_city LIKE CONCAT(#{city},'%') OR goods.dest_city LIKE CONCAT(#{city},'%'))
+		</if>
+		ORDER BY goods.create_time DESC
+		LIMIT 200 
+	</select>
+	<!--待报价货源的需求车型占比 -->
+	<select id="get_need_car_type_percent" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT countCarType.carType, countCarType.carCount, countAll.carCount allCount FROM 
+		(
+		SELECT
+  			goods.car_type  carType,
+  			COUNT(1) carCount
+		FROM
+  			t_goods_source goods
+		WHERE 1=1
+			AND goods.is_delete = 0
+			AND goods.statuz = 1
+			AND (goods.start_province IS NOT NULL AND goods.start_city IS NOT NULL AND goods.start_county IS NOT NULL)
+			AND (goods.dest_province IS NOT NULL AND goods.dest_city IS NOT NULL AND goods.dest_county IS NOT NULL)
+		<if test="province !=null and province !=''">
+			  AND	(goods.start_province LIKE CONCAT(#{province},'%') OR goods.dest_province LIKE CONCAT(#{province},'%'))
+		</if>
+		<if test="city !=null and city !=''">
+			  AND	(goods.start_city LIKE CONCAT(#{city},'%') OR goods.dest_city LIKE CONCAT(#{city},'%'))
+		</if>
+
+		GROUP BY goods.car_type) countCarType,
+		(
+		SELECT COUNT(1) carCount 
+		FROM t_goods_source goods
+		WHERE 1=1
+		AND goods.is_delete = 0
+		AND goods.statuz = 1
+		AND (goods.start_province IS NOT NULL AND goods.start_city IS NOT NULL AND goods.start_county IS NOT NULL)
+		AND (goods.dest_province IS NOT NULL AND goods.dest_city IS NOT NULL AND goods.dest_county IS NOT NULL)		
+		<if test="province !=null and province !=''">
+			  AND	(goods.start_province LIKE CONCAT(#{province},'%') OR goods.dest_province LIKE CONCAT(#{province},'%'))
+		</if>
+		<if test="city !=null and city !=''">
+			  AND	(goods.start_city LIKE CONCAT(#{city},'%') OR goods.dest_city LIKE CONCAT(#{city},'%'))
+		</if>
+		)countAll
+		ORDER BY countCarType.carCount DESC
+		LIMIT 9 
+	</select>
+	<!--待报价货源的需求车长占比 -->
+	<select id="get_need_car_length_percent" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT groupCount.value, CONCAT(ROUND(groupCount.countCarLength / allCount.countCarLength * 100,2),'%') percent, groupCount.countCarLength, allCount.countCarLength allCount FROM 
+		(
+		SELECT d.value, COUNT(tgs.id) countCarLength  FROM t_dictionary d
+		LEFT JOIN t_goods_source tgs ON tgs.car_length LIKE CONCAT('%', d.value , '%')
+		WHERE 1= 1
+		AND d.p_id = 'carlength'
+		AND tgs.is_delete = 0
+		AND tgs.statuz = 1
+		<if test="province !=null and province !=''">
+			  AND	(goods.start_province LIKE CONCAT(#{province},'%') OR goods.dest_province LIKE CONCAT(#{province},'%'))
+		</if>
+		<if test="city !=null and city !=''">
+			  AND	(goods.start_city LIKE CONCAT(#{city},'%') OR goods.dest_city LIKE CONCAT(#{city},'%'))
+		</if>
+		GROUP BY d.value
+		) groupCount,
+		(
+		SELECT COUNT(*) countCarLength FROM t_goods_source tgs 
+		WHERE 1 = 1 
+		AND tgs.statuz = 1
+		AND tgs.is_delete = 0
+		<if test="province !=null and province !=''">
+			  AND	(goods.start_province LIKE CONCAT(#{province},'%') OR goods.dest_province LIKE CONCAT(#{province},'%'))
+		</if>
+		<if test="city !=null and city !=''">
+			  AND	(goods.start_city LIKE CONCAT(#{city},'%') OR goods.dest_city LIKE CONCAT(#{city},'%'))
+		</if>
+		)allCount
+		ORDER BY groupCount.countCarLength DESC
+		LIMIT 9 
+	</select>
+	<!-- 货源分布区域 -->
+	<select id="get_need_order_area_percent" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  					areaCount.area,
+  					CONCAT(ROUND(areaCount.orderCount / allCount.orderCount * 100,2),'%') percent,
+  					areaCount.orderCount areaOrderCount,
+  					allCount.orderCount allOrderCount
+			FROM
+  					(SELECT
+  					<if test="city !=null and city !=''">
+  							tarea.area_name area,
+  					</if>
+  					<if test="(province !=null and province !='') and (city ==null or city =='')">
+  							tarea.parent_name area,
+  					</if>
+  					<if test="(province ==null or province =='') and (city ==null or city =='')">
+  							tarea.grandparent_name area,
+  					</if>
+    						COUNT(*) orderCount
+  					FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+   				 	LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  						AND o.statuz = 1 
+  						AND o.is_delete = 0
+    					AND appuser.statuz = '1'
+    					AND tarea.grandparent_name IS NOT NULL
+					<if test="city !=null and city !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						
+					</if>
+					<if test="province !=null and province !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+					</if>
+					<if test="city !=null and city !=''">
+						GROUP BY tarea.area_name
+					</if>
+					<if test="(province !=null and province !='') and (city ==null or city =='')">
+						GROUP BY tarea.parent_name
+					</if>
+					<if test="(city ==null or city =='') and (province ==null or province =='')">
+						GROUP BY tarea.grandparent_name
+					</if>
+  					) areaCount,
+  					(SELECT
+    						COUNT(*) orderCount
+      				FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+    				LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  							AND o.statuz = 1 
+  							AND o.is_delete = 0
+     						AND appuser.statuz = '1'
+    						AND tarea.grandparent_name IS NOT NULL
+    					<if test="city !=null and city !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						</if>
+						<if test="province !=null and province !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+						</if>
+    				) allCount
+    				ORDER BY areaCount.orderCount DESC
+    				LIMIT 9 
+	</select>
+	<!-- 注册增长趋势 -->
+	<select id="get_order_speed" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT
+  			DATE_FORMAT(o.create_time, '%y/%m') date,
+    						COUNT(*) orderCount
+  					FROM t_order o
+    				LEFT JOIN t_company company ON company.id = o.company_id
+   				 	LEFT JOIN t_agent agent ON agent.agent_code = company.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    				LEFT JOIN t_appuser appuser ON appuser.id = company.app_user_id
+  					WHERE 1 = 1
+  						AND o.is_delete = 0
+    					AND appuser.statuz = '1'
+    					AND tarea.grandparent_name IS NOT NULL
+  	  <if test="city !=null and city !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+	  </if>
+	  <if test="province !=null and province !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+	  </if>
+				GROUP BY DATE_FORMAT(o.create_time, '%y%m') DESC
+				LIMIT 1,6
+	</select>
+	<!-- 闲置的车辆 -->
+	<select id="get_new_unuser_car_list" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT 
+			DISTINCT
+			car.id id,
+			driver.name driverName,
+			driver.mobile phone,
+			car.car_num carNum
+		FROM 
+			t_driver driver
+		LEFT JOIN t_car car ON (car.driver_id=driver.id AND car.car_num is not null)
+		LEFT JOIN t_carrier carr ON (carr.bean_id=driver.id AND carr.type=2)
+	    LEFT JOIN t_agent agent ON agent.agent_code=driver.agent_code
+	    LEFT JOIN t_area area ON area.id=agent.areaCode
+		LEFT JOIN t_order o ON (o.carrier_id=carr.id AND carr.type=2 AND o.statuz not IN(1,2,3,4,5))
+		LEFT JOIN t_appuser user ON (user.id=driver.app_user_id)
+		WHERE 1=1 
+		AND	driver.agent_code is not null
+		AND area.grandparent_name is not null
+		AND user.statuz =1
+	  	<if test="province !=null and province !=''">
+		AND	CONCAT(area.grandparent_name,area.parent_name) LIKE CONCAT(#{province},'%')
+	  	</if>
+		<if test="city !=null and city !=''">
+		AND	CONCAT(area.grandparent_name,area.parent_name) LIKE CONCAT('%',#{city})
+		GROUP BY driver.name, car.car_num
+	 	</if>
+		<if test="city ==null or city ==''">
+		GROUP BY CONCAT(area.grandparent_name,area.parent_name)
+		</if>
+	</select>
+	<!--需求车型占比 -->
+	<select id="get_car_type_percent" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			  carTypeCount.type type,
+			  carTypeCount.carCount carCount,
+			  allCount.carCount allCount
+			FROM
+			  (SELECT
+			    car.type TYPE,
+			    COUNT(1) carCount
+			  FROM
+			    t_car car
+			  LEFT JOIN t_agent agent ON car.agent_code = agent.agent_code
+			  LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+			  WHERE 1=1
+			  AND car.is_delete = 0
+    		  AND tarea.grandparent_name IS NOT NULL
+			  <if test="city !=null and city !=''">
+				 AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+			  </if>
+			  <if test="province !=null and province !=''">
+				  AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+			  </if>
+			  GROUP BY car.type) carTypeCount,
+			  (SELECT
+			    COUNT(1) carCount
+			  FROM
+			    t_car car
+			  LEFT JOIN t_agent agent ON car.agent_code = agent.agent_code
+			  LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+			  WHERE 1=1
+			  AND car.is_delete = 0
+    		  AND tarea.grandparent_name IS NOT NULL
+			  <if test="city !=null and city !=''">
+				 AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+			  </if>
+			  <if test="province !=null and province !=''">
+				  AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+			  </if>
+			  ) allCount
+		ORDER BY carTypeCount.carCount DESC
+		LIMIT 9 
+	</select>
+	<!--需求车长占比 -->
+	<select id="get_car_length_percent" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			  carTypeCount.carlength carlength,
+			  carTypeCount.carCount carCount,
+			  allCount.carCount allCount
+			FROM
+			  (SELECT
+			    car.car_length carlength,
+			    COUNT(1) carCount
+			  FROM
+			    t_car car
+			  LEFT JOIN t_agent agent ON car.agent_code = agent.agent_code
+			  LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+			  WHERE 1=1
+			  AND car.is_delete = 0
+    		  AND tarea.grandparent_name IS NOT NULL
+			  <if test="city !=null and city !=''">
+				 AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+			  </if>
+			  <if test="province !=null and province !=''">
+				  AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+			  </if>
+			  GROUP BY car.car_length) carTypeCount,
+			  (SELECT
+			    COUNT(1) carCount
+			  FROM
+			    t_car car
+			  LEFT JOIN t_agent agent ON car.agent_code = agent.agent_code
+			  LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+			  WHERE 1=1
+			  AND car.is_delete = 0
+    		  AND tarea.grandparent_name IS NOT NULL
+			  <if test="city !=null and city !=''">
+				 AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+			  </if>
+			  <if test="province !=null and province !=''">
+				  AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+			  </if>
+			  ) allCount
+		ORDER BY carTypeCount.carCount DESC
+		LIMIT 9 
+	</select>
+	<!--司机区域分布-->
+	<select id="get_car_area_count" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+  					areaCount.area,
+  					CONCAT(ROUND(areaCount.carCount / allCount.carCount * 100,2),'%') percent,
+  					areaCount.carCount areaCarCount,
+  					allCount.carCount allCarCount
+			FROM
+  					(SELECT
+  					<if test="city !=null and city !=''">
+  							tarea.area_name AREA,
+  					</if>
+  					<if test="(province !=null and province !='') and (city ==null or city =='')">
+  							tarea.parent_name AREA,
+  					</if>
+  					<if test="(province ==null or province =='') and (city ==null or city =='')">
+  							tarea.grandparent_name AREA,
+  					</if>
+    						COUNT(*) carCount
+  					FROM t_car car
+   				 LEFT JOIN t_agent agent ON agent.agent_code = car.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+  					WHERE 1 = 1
+  						AND car.is_delete = 0
+    					AND tarea.grandparent_name IS NOT NULL
+					<if test="city !=null and city !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						
+					</if>
+					<if test="province !=null and province !=''">
+						AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+					</if>
+					<if test="city !=null and city !=''">
+						GROUP BY tarea.area_name
+					</if>
+					<if test="(province !=null and province !='') and (city ==null or city =='')">
+						GROUP BY tarea.parent_name
+					</if>
+					<if test="(city ==null or city =='') and (province ==null or province =='')">
+						GROUP BY tarea.grandparent_name
+					</if>
+  					) areaCount,
+  					(SELECT
+    						COUNT(*) carCount
+      				FROM t_car car
+    				LEFT JOIN t_agent agent ON agent.agent_code = car.agent_code
+    				LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+  					WHERE 1 = 1
+  							AND car.is_delete = 0
+    						AND tarea.grandparent_name IS NOT NULL
+    					<if test="city !=null and city !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+						</if>
+						<if test="province !=null and province !=''">
+							AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+						</if>
+    				) allCount
+    				ORDER BY areaCount.carCount DESC
+    				LIMIT 9 
+	</select>
+	<!--司机总收入趋势-->
+	<select id="get_car_revenue_speed" parameterType="java.util.Map" resultType="java.util.Map">
+		SELECT
+			  DATE_FORMAT(o.create_time, '%y/%m') date,
+			  SUM(o.pay_money) sum
+			FROM
+			  t_car car
+			  LEFT JOIN t_agent agent
+			    ON agent.agent_code = car.agent_code
+			  LEFT JOIN t_area tarea
+			    ON tarea.id = agent.areaCode
+			  LEFT JOIN t_order o
+			    ON o.car_id = car.id
+			WHERE 1 = 1
+			  AND car.is_delete = 0
+			  AND o.is_delete = 0
+			  AND tarea.grandparent_name IS NOT NULL
+    		<if test="city !=null and city !=''">
+			  AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+			 </if>
+			 <if test="province !=null and province !=''">
+			   AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+			 </if>
+			GROUP BY DATE_FORMAT(o.create_time, '%y%m') DESC
+		LIMIT 1, 6
+	</select>
+	<!-- 车辆 详情-->
+	<select id="get_car_detail" parameterType="java.util.Map" resultType="java.util.Map">
+			SELECT 
+			driver.name driverName,
+		    car.car_num carNum,
+		    car.car_length carLength,
+		    car.type carType,
+		    car.load_weight loadWeight,
+			driver.mobile phone,
+			 SUM(o.pay_money) sumMoney, COUNT(o.id) countOrder, SUM(g.distance) sunDistance
+		FROM
+			t_car car
+		LEFT JOIN t_driver driver ON driver.id=car.driver_id
+		LEFT JOIN t_order o ON o.driver_idd = driver.id 
+		LEFT JOIN t_goods_source g ON g.id = o.goods_source_id 
+		WHERE 1=1
+		AND car.id=#{carId}
+		LIMIT 1
+	</select>
+	<!-- 全国交易额 -->
+	<select id="get_new_total_trade_money" parameterType="java.util.Map" resultType="java.util.Map">
+	SELECT  totalTradeMoney.allOrderMoney,   totalTradeMoneyPercent.percent FROM
+	(SELECT IFNULL(SUM(t.company_payed_money),0) allOrderMoney
+         FROM t_finance t
+         LEFT JOIN t_order o ON  t.order_id=o.id 
+   	 	 LEFT JOIN t_agent agent ON agent.agent_code = o.agent_code
+    	 LEFT JOIN t_area tarea ON tarea.id = agent.areaCode
+    	 WHERE  1 = 1  AND o.is_delete=0
+  	  <if test="city !=null and city !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT('%',#{city})
+	  </if>
+	  <if test="province !=null and province !=''">
+				AND	CONCAT(tarea.grandparent_name,tarea.parent_name) LIKE CONCAT(#{province},'%')
+	  </if>)totalTradeMoney,
+    	 (
+    	 SELECT d.value percent FROM  t_dictionary d WHERE d.id = 'totalTradeMoneyPercent'
+    	 )totalTradeMoneyPercent
+	</select>
+</mapper>
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<!-- 这是一个完整的接口定义，如不需要或为空的，可以没有这个元素 -->
+	<itface>
+		<itfaceId>Bank100</itfaceId>
+		<itfaceDesc>银行卡查询</itfaceDesc>
+		<itfaceType>inner</itfaceType>
+		<innerType>spring</innerType>
+		<innerTargetName>bankCardServiceImpl</innerTargetName>
+		<className>com.zt3000.bank.service.impl.BankCardServiceImpl</className>
+		<methodName>getBankInfoBelongBankCard</methodName>
+	</itface>
+
+</root>

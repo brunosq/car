@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>指挥中心</title>
+    <link rel="stylesheet" href="../../css/v2/common.css">
+    <link rel="stylesheet" href="../../css/v2/index.css">
+    <script src="../../js/v2/layout.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="screen-title">
+            <div class="w">
+                智通三千物流企业管家
+            </div>
+        </div>
+        <!--累计交易额/降低物流成本-->
+        <div class="public-center">
+            <div class="w">
+                <div class="line1">
+                全国累计交易额
+                    <span class="emp" id="totalTradeValue"></span>
+                    元
+                </div>
+                <div class="line2">
+                    降低
+                    <span class="emp" id="reduceValue">111</span>
+                    元物流成本
+                </div>
+            </div>
+        </div>
+        <!--大屏左侧tab-->
+        <div class="left-container">
+            <ul class="tab-box">
+                <li>企业</li>
+                <li>在途订单</li>
+                <li>待报价货源</li>
+                <li>闲置车辆</li>
+            </ul>
+            <div class="tab-body outer-container">
+                <div class="inner-container">
+                    <ul class="content style1" id="companyLists" style="display: block">
+                    </ul>
+                    <ul class="content style2" id="onRoadLists"></ul>
+                    <ul class="content style2" id="toBeQuotedLists"></ul>
+                    <ul class="content style1" id="unUsedCarLists"></ul>
+                </div>
+            </div>
+        </div>
+        <!--大屏右侧-->
+        <div class="right-container">
+            <div class="tab-body-right right1" style="display: block">
+                <div class="parent">
+                    <div class="company-item1 company-item">
+                        <div id="goodsTypeBox"></div>
+                        <div id="regionBox"></div>
+                    </div>
+                    <div class="company-item2 company-item" id="regionTop5"></div>
+                    <div class="company-item3 company-item" id="registerTrend"></div>
+                </div>
+                <div class="son" id="companyDetails">
+                    <div class="company-details-item">
+                        <div class="w">
+                            <h3 class="title">企业详情</h3>
+                            <div class="main-info">
+                                <div>
+                                    <div class="img-box">
+                                        <img src="../../images/v2/icon_company.png" alt="">
+                                    </div>
+                                    <div>
+                                        <p id="companyName"></p>
+                                        <p id="companyMobile"></p>
+                                    </div>
+                                </div>
+                                <div class="company-info">
+                                    <label for="">企业注册码:</label>
+                                    <span id="agentCode"></span>
+                                </div>
+                                <div class="company-info">
+                                    <label for="">企业地址:</label>
+                                    <span id="companyAddr"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="company-details-item company-past-info">
+                        <div class="w">
+                            <h3 class="title">历史发货量</h3>
+                            <div class="main-info">
+                                <div class="item">
+                                    <div>
+                                        <div class="icon-box">
+                                            <img src="../../images/v2/icon_money.png" alt="">
+                                        </div>
+                                        <div class="icon-text">交易总额</div>
+                                    </div>
+                                    <div class="emp-word">
+                                        <span>¥</span>
+                                        <span>9999</span>
+                                    </div>
+                                </div>
+                                <div class="item">
+                                    <div>
+                                        <div class="icon-box">
+                                            <img src="../../images/v2/icon_order.png" alt="">
+                                        </div>
+                                        <div class="icon-text">运单数</div>
+                                    </div>
+                                    <div class="emp-word">
+                                        <span>9988</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-body-right">
+                <div class="parent"></div>
+                <div class="son"></div>
+            </div>
+            <div class="tab-body-right">
+                <div class="parent"></div>
+                <div class="son"></div>
+            </div>
+            <div class="tab-body-right">
+                <div class="parent"></div>
+                <div class="son"></div>
+            </div>
+        </div>
+        <!--中间地球-->
+        <div id="earth">
+
+        </div>
+    </div>
+    <script src="../../js/jquery.min.js"></script>
+    <script src="../../js/echarts.js"></script>
+    <script src="../../js/v2/ajax.js"></script>
+    <script src="../../js/v2/index.js"></script>
+</body>
+</html>

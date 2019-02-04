@@ -1,0 +1,80 @@
+html,body{ 
+	   background-image: url(../images/bg_mindex.png);
+	  background-size: 100% 100%;
+	  font-family: '微软雅黑' !important;
+	  padding: 0px;
+      margin: 0px;
+      height: 100%;
+      width: 100%;
+	  overflow-x: hidden;
+	  }
+	#title{
+		background-image: url(../images/topbackground.png);
+		background-size: 100% 100%;
+		height: 50px;
+		text-align: center;
+		font-size: 15px;
+		font-weight: bold;
+		line-height: 50px;
+		color: #64bef5;
+		width: 90%;
+		margin-left: 20px;
+		margin-top: 10px;
+	}
+
+	#tradeView{
+		background-size: 100% 100%;
+		background-image: url(../images/left_top.png);
+		width:90%;
+		height:220px;
+		margin-left: 20px;
+	}
+
+	#tradeChart{
+		background-size: 100% 100%;
+		background-image: url(../images/line02.png);
+		margin-top: 15px;
+		height: 200px;
+		width: 100%;
+	}
+
+	#left_bottom_rate{
+		position: absolute;
+		width:100%;
+		margin-top: -135px;
+		font-size: 10px;
+		color:#407da3;
+	}
+
+	#left_bottom_growth{
+		position: absolute;
+		width:100%;
+		margin-top:-35px;
+		font-size: 10px;
+		color:#407da3;
+	}
+
+	/*.form-control{*/
+		/*background-image: url(../images/select.png);*/
+		/*background-size: 100% 100%;*/
+	/*}*/
+
+	.col-xs-4{
+		padding-left: 0px;
+		padding-right: 0px;
+	}
+
+
+	.form1 {
+		/*-moz-appearance: none;*/
+		/*-webkit-appearance: none;*/
+		/*appearance: none;*/
+		box-sizing: border-box;
+		border-radius: 5px;
+		border: 1px solid transparent;
+		background-clip: padding-box, border-box;
+		background-origin: padding-box, border-box;
+		background-image: linear-gradient(#000B10, #000B10), linear-gradient(120deg, #065770, #76e7ff, #00CDF9, #065770);
+		color: #00B4FF;
+		font-size: 16px;
+	}

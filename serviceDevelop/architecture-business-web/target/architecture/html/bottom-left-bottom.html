@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+	</head>
+	<link rel="stylesheet" href="../css/frame_index.css" type="text/css" />
+	<body>
+		<div id="left_bottom"></div>
+		<div class="left_bottom_rate">
+			<span style="margin-right:10%">货源发布率环比增长</span>
+			<span style="margin-right:8%">货源报价率环比增长</span>
+			<span>货源成单率环比增长</span>
+		</div>
+		<div class="left_bottom_growth">
+			<span style="margin-right:10%">货源发布率同比增长</span>
+			<span style="margin-right:8%">货源报价率同比增长</span>
+			<span>货源成单率同比增长</span>
+		</div>
+	</body>
+	<script type="text/javascript" src="../js/jquery.min.js"></script>
+	<script type="text/javascript" src="../js/echarts-all.js"></script>
+	<script type="text/javascript" src="../js/geomap.js"></script>
+	<script type="text/javascript" src="../js/util.js"></script>
+	<script type="text/javascript" src="../js/index.js"></script>
+	<script type="text/javascript">
+	//启动加载
+    $(function(){
+    	
+    	var param='';
+    	getGoodsRate(param);/*货源报价率、发布率、成单率、同比率*/
+    	
+    	/*2渲染Echarts*/
+    	showRate();
+    	
+	});
+	</script>
+</html>
